@@ -1,0 +1,13 @@
+{
+  "language": "English",
+  "onboarding": {
+    "title1": "Ayudemos al Planeta",
+    "desc1": "La forma mas facil de ayudar y salvar a nuestro planeta es reciclando.",
+    "title2": "Reciclar es facil",
+    "desc2": "Con esta aplicacion, el habito de reciclar se hace tan facil y accesible.",
+    "title3": "Centros de Reciclaje",
+    "desc3": "Conectese con los Centros de Acopio dentro de nuestra red de servicio.",
+    "next": "Siguiente",
+    "start": "Comenzar"
+  }
+}

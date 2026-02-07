@@ -92,7 +92,7 @@ export default function SearchBar({ onSearch }: Props) {
           />
         </Animated.View>
 
-        <WdIcon name="keyboard-voice" size={25} color={theme.colors.text} />
+        {/* <WdIcon name="keyboard-voice" size={25} color={theme.colors.text} /> */}
       </View>
     </View>
   );
@@ -104,16 +104,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 2,
     borderRadius: 12,
-    marginHorizontal: 25,
-    marginTop: 10,
+    marginHorizontal: 10,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
-    borderRadius: 10,
+    borderRadius: 30,
     paddingHorizontal: 15,
-    height: 44,
+    height: 50,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.1)',
   },

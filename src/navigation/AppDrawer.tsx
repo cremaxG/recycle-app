@@ -59,7 +59,7 @@ const AppDrawer = () => {
   });
 
   const goToTab = (tabName: string) => {
-    navigation.navigate('Profile');
+    navigation.navigate(tabName);
     closePanel();
   };
 
@@ -136,7 +136,7 @@ const AppDrawer = () => {
 
             <TouchableOpacity
               style={styles.panelItem}
-              onPress={() => goToTab('DropOff')}
+              onPress={() => goToTab('RecycleCenters')}
             >
               <Icon
                 name="trash-can-outline"

@@ -15,6 +15,13 @@ import OnboardingScreen from '../screens/Onboarding/OnboardingScreen';
 import WelcomeScreen from '../screens/Auth/WelcomeScreen';
 import OTPVerificationScreen from '../screens/Auth/OTPVerificationScreen';
 import ProfileScreen from '../screens/Profile/ProfileScreen';
+import RecycleDetailsScreen from '../screens/Recycle/RecycleDetailsScreen';
+import PickUpScreen from '../screens/PickUp/PickUpScreen';
+import RecycleTypeScreen from '../screens/PickUp/RecycleTypeScreen';
+import SchedulePickUpScreen from '../screens/PickUp/SchedulePickUpScreen';
+import RecycleCentersListScreen from '../screens/Recycle/RecycleCentersListScreen';
+import RecycleCenterSelectionScreen from '../screens/PickUp/RecycleCenterSelectionScreen';
+import PickUpConfirmationScreen from '../screens/PickUp/PickUpConfirmationScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -24,6 +31,13 @@ export type RootStackParamList = {
   Welcome: undefined;
   Home: undefined;
   Profile: undefined;
+  RecycleCenters: undefined;
+  RecycleDetail: undefined;
+  PickUp: undefined;
+  RecycleTypeSelection: undefined;
+  SchedulePickUp: undefined;
+  RecycleCenterSelection: undefined;
+  PickUpConfirmation: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -42,6 +56,31 @@ const AppNavigator = () => {
           <>
             <Stack.Screen name="Home" component={AppDrawer} />
             <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen
+              name="RecycleCenters"
+              component={RecycleCentersListScreen}
+            />
+            <Stack.Screen
+              name="RecycleDetail"
+              component={RecycleDetailsScreen}
+            />
+            <Stack.Screen name="PickUp" component={PickUpScreen} />
+            <Stack.Screen
+              name="RecycleTypeSelection"
+              component={RecycleTypeScreen}
+            />
+            <Stack.Screen
+              name="SchedulePickUp"
+              component={SchedulePickUpScreen}
+            />
+            <Stack.Screen
+              name="RecycleCenterSelection"
+              component={RecycleCenterSelectionScreen}
+            />
+            <Stack.Screen
+              name="PickUpConfirmation"
+              component={PickUpConfirmationScreen}
+            />
           </>
         ) : (
           <>

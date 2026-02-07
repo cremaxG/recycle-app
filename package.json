@@ -21,6 +21,7 @@
     "react-native": "0.83.1",
     "react-native-gesture-handler": "^2.30.0",
     "react-native-localize": "^3.6.1",
+    "react-native-maps": "^1.27.1",
     "react-native-mmkv": "^4.1.1",
     "react-native-nitro-modules": "^0.33.1",
     "react-native-paper": "^5.14.5",

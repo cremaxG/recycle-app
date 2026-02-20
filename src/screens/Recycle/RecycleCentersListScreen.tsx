@@ -18,7 +18,7 @@ import SearchBar from '../../components/common/WdSearch';
 
 const { height } = Dimensions.get('window');
 const DRAWER_MIN_HEIGHT = height * 0.5; // Collapsed state
-const DRAWER_MAX_HEIGHT = height * 0.75; // Expanded state
+const DRAWER_MAX_HEIGHT = height * 0.7; // Expanded state
 
 interface RecycleCenter {
   id: string;
@@ -175,7 +175,7 @@ const RecycleCentersListScreen = ({ isFromPickUpScreen = false }) => {
                 styles.backBtn,
                 { backgroundColor: theme.colors.background },
               ]}
-              onPress={() => navigation.goBack()}
+              onPress={() => navigation.navigate('Home')}
             >
               <Icon name="arrow-back" size={24} color={theme.colors.text} />
             </TouchableOpacity>

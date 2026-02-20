@@ -268,7 +268,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   mapContainer: {
-    height: height * 0.6,
+    height: height * 0.5,
     position: 'relative',
   },
   map: {

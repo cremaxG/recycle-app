@@ -1,5 +1,4 @@
 import React, { useRef, useState } from 'react';
-import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MainTabs from './MainTabs';
 import { useTheme } from '../context/ThemeContext';
 import {
@@ -10,7 +9,6 @@ import {
   Pressable,
   SafeAreaView,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -18,8 +16,6 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
 import WdText from '../components/common/WdText';
 import { useAuth } from '../context/AuthContext';
-
-const Stack = createNativeStackNavigator();
 
 const AppDrawer = () => {
   const { logout } = useAuth();
@@ -29,15 +25,15 @@ const AppDrawer = () => {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const slideAnim = useRef(new Animated.Value(0)).current;
 
-  const openPanel = () => {
-    setIsPanelOpen(true);
-    Animated.timing(slideAnim, {
-      toValue: 1,
-      duration: 240,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: true,
-    }).start();
-  };
+  // const openPanel = () => {
+  //   setIsPanelOpen(true);
+  //   Animated.timing(slideAnim, {
+  //     toValue: 1,
+  //     duration: 240,
+  //     easing: Easing.out(Easing.cubic),
+  //     useNativeDriver: true,
+  //   }).start();
+  // };
 
   const closePanel = () => {
     Animated.timing(slideAnim, {
@@ -67,28 +63,21 @@ const AppDrawer = () => {
 
   return (
     <View style={styles.root}>
-      <Stack.Navigator
-        screenOptions={{
-          headerShown: true,
-          headerTitle: 'Recycle App',
-          headerTitleAlign: 'center',
-          headerStyle: {
-            backgroundColor: theme.colors.appBgLight,
-          },
-          headerTintColor: theme.colors.text,
-          headerShadowVisible: false,
-          headerLeft: () => (
-            <TouchableOpacity
-              onPress={openPanel}
-              accessibilityLabel="Open menu"
-            >
-              <Icon name="menu" size={26} color={theme.colors.text} />
-            </TouchableOpacity>
-          ),
-        }}
-      >
-        <Stack.Screen name="Tabs" component={MainTabs} />
-      </Stack.Navigator>
+      {/* Directly render MainTabs without Stack.Navigator */}
+      <MainTabs />
+
+      {/* Menu button overlay - positioned at top left */}
+      {/* <View style={styles.menuButtonContainer} pointerEvents="box-none">
+        <SafeAreaView pointerEvents="box-none">
+          <TouchableOpacity
+            onPress={openPanel}
+            accessibilityLabel="Open menu"
+            style={styles.menuButton}
+          >
+            <Icon name="menu" size={26} color={theme.colors.text} />
+          </TouchableOpacity>
+        </SafeAreaView>
+      </View> */}
 
       <Pressable
         style={StyleSheet.absoluteFill}
@@ -168,7 +157,7 @@ const AppDrawer = () => {
 
             <TouchableOpacity
               style={styles.panelItem}
-              onPress={() => goToTab('Profile')}
+              onPress={() => goToTab('ManageProfile')}
             >
               <Icon
                 name="account-outline"
@@ -198,6 +187,17 @@ export default AppDrawer;
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+  },
+  menuButtonContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  menuButton: {
+    padding: 12,
+    paddingLeft: 16,
   },
   overlay: {
     flex: 1,

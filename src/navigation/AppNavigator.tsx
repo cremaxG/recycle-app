@@ -14,7 +14,6 @@ import AppDrawer from './AppDrawer';
 import OnboardingScreen from '../screens/Onboarding/OnboardingScreen';
 import WelcomeScreen from '../screens/Auth/WelcomeScreen';
 import OTPVerificationScreen from '../screens/Auth/OTPVerificationScreen';
-import ProfileScreen from '../screens/Profile/ProfileScreen';
 import RecycleDetailsScreen from '../screens/Recycle/RecycleDetailsScreen';
 import PickUpScreen from '../screens/PickUp/PickUpScreen';
 import RecycleTypeScreen from '../screens/PickUp/RecycleTypeScreen';
@@ -22,6 +21,8 @@ import SchedulePickUpScreen from '../screens/PickUp/SchedulePickUpScreen';
 import RecycleCentersListScreen from '../screens/Recycle/RecycleCentersListScreen';
 import RecycleCenterSelectionScreen from '../screens/PickUp/RecycleCenterSelectionScreen';
 import PickUpConfirmationScreen from '../screens/PickUp/PickUpConfirmationScreen';
+import ManageProfileScreen from '../screens/Profile/ManageProfile';
+import EditProfileScreen from '../screens/Profile/EditProfileScreen';
 
 export type RootStackParamList = {
   Login: undefined;
@@ -30,7 +31,8 @@ export type RootStackParamList = {
   Onboarding: undefined;
   Welcome: undefined;
   Home: undefined;
-  Profile: undefined;
+  ManageProfile: undefined;
+  EditProfile: undefined;
   RecycleCenters: undefined;
   RecycleDetail: undefined;
   PickUp: undefined;
@@ -55,7 +57,11 @@ const AppNavigator = () => {
         ) : isAuthenticated ? (
           <>
             <Stack.Screen name="Home" component={AppDrawer} />
-            <Stack.Screen name="Profile" component={ProfileScreen} />
+            <Stack.Screen
+              name="ManageProfile"
+              component={ManageProfileScreen}
+            />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
             <Stack.Screen
               name="RecycleCenters"
               component={RecycleCentersListScreen}

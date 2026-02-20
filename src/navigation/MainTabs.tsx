@@ -4,6 +4,9 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import HomeScreen from '../screens/Home/HomeScreen';
 import { useTheme } from '../context/ThemeContext';
 import { View } from 'react-native';
+import PickUpScreen from '../screens/PickUp/PickUpScreen';
+import RecycleCentersListScreen from '../screens/Recycle/RecycleCentersListScreen';
+import ManageProfileScreen from '../screens/Profile/ManageProfile';
 
 const Tab = createBottomTabNavigator();
 
@@ -11,6 +14,7 @@ const MainTabs = () => {
   const { theme } = useTheme();
   return (
     <Tab.Navigator
+      initialRouteName="Home"
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
@@ -80,11 +84,11 @@ const MainTabs = () => {
         },
       })}
     >
-      <Tab.Screen name="DropOff" component={HomeScreen} />
-      <Tab.Screen name="PickUp" component={HomeScreen} />
+      <Tab.Screen name="DropOff" component={RecycleCentersListScreen} />
+      <Tab.Screen name="PickUp" component={PickUpScreen} />
       <Tab.Screen name="Home" component={HomeScreen} />
       <Tab.Screen name="Learn" component={HomeScreen} />
-      <Tab.Screen name="Profile" component={HomeScreen} />
+      <Tab.Screen name="Profile" component={ManageProfileScreen} />
     </Tab.Navigator>
   );
 };

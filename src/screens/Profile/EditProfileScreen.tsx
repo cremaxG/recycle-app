@@ -14,10 +14,9 @@ import WdButton from '../../components/common/WdButton';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-const ProfileScreen = () => {
+const EditProfileScreen = () => {
   const { theme } = useTheme();
   const navigation = useNavigation();
-  const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const [profile, setProfile] = useState({
@@ -43,7 +42,7 @@ const ProfileScreen = () => {
 
     setTimeout(() => {
       setLoading(false);
-      setIsEditing(false);
+      navigation.goBack();
     }, 800);
   };
 
@@ -51,11 +50,11 @@ const ProfileScreen = () => {
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
     >
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
+      {/* FIXED HEADER */}
+      <View
+        style={[styles.header, { backgroundColor: theme.colors.background }]}
       >
-        <View style={styles.header}>
+        <View style={styles.headerTop}>
           <TouchableOpacity
             style={styles.backBtn}
             onPress={() => navigation.goBack()}
@@ -63,33 +62,46 @@ const ProfileScreen = () => {
             <Icon name="arrow-back" size={24} color={theme.colors.text} />
           </TouchableOpacity>
 
-          <WdText
-            label="Profile"
-            fontSize={24}
-            isBold
-            style={{ marginLeft: 40 }}
-          />
+          <View>
+            <WdText
+              label="Edit Profile"
+              fontSize={20}
+              isBold
+              style={{ marginLeft: 15 }}
+            />
+            <WdText
+              label="Update your information"
+              color={theme.colors.placeholder}
+              style={styles.subtitle}
+            />
+          </View>
         </View>
+      </View>
 
-        <WdText
-          label="Help us with your information"
-          color={theme.colors.placeholder}
-          style={{ marginBottom: 24 }}
-        />
-
+      {/* SCROLLABLE CONTENT */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
         {/* AVATAR */}
         <View style={styles.avatarContainer}>
-          <Image
-            source={{
-              uri: 'https://randomuser.me/api/portraits/men/32.jpg',
-            }}
-            style={styles.avatar}
-          />
-          {isEditing && (
-            <TouchableOpacity style={styles.cameraBtn}>
-              <Icon name="camera-outline" size={18} color="#fff" />
+          <View style={styles.avatarWrapper}>
+            <Image
+              source={{
+                uri: 'https://picsum.photos/150',
+              }}
+              style={styles.avatar}
+            />
+            <TouchableOpacity
+              style={[
+                styles.cameraBtn,
+                { backgroundColor: theme.colors.appBg },
+              ]}
+            >
+              <Icon name="camera" size={18} color="#fff" />
             </TouchableOpacity>
-          )}
+          </View>
         </View>
 
         {/* FORM */}
@@ -98,11 +110,10 @@ const ProfileScreen = () => {
           value={profile.fullName}
           onChangeText={text => onChange('fullName', text)}
           placeholder="Full Name"
-          editable={isEditing}
           appendIcon={{
             name: 'person-outline',
             size: 18,
-            color: isEditing ? theme.colors.text : theme.colors.placeholder,
+            color: theme.colors.text,
           }}
         />
 
@@ -111,11 +122,10 @@ const ProfileScreen = () => {
           value={profile.phone}
           onChangeText={text => onChange('phone', text)}
           placeholder="Phone"
-          editable={isEditing}
           appendIcon={{
             name: 'call-outline',
             size: 18,
-            color: isEditing ? theme.colors.text : theme.colors.placeholder,
+            color: theme.colors.text,
           }}
         />
 
@@ -124,11 +134,10 @@ const ProfileScreen = () => {
           value={profile.email}
           onChangeText={text => onChange('email', text)}
           placeholder="Email"
-          editable={isEditing}
           appendIcon={{
             name: 'mail-outline',
             size: 18,
-            color: isEditing ? theme.colors.text : theme.colors.placeholder,
+            color: theme.colors.text,
           }}
         />
 
@@ -137,7 +146,6 @@ const ProfileScreen = () => {
           value={profile.address}
           onChangeText={text => onChange('address', text)}
           placeholder="Address"
-          editable={isEditing}
         />
 
         <WdInput
@@ -145,7 +153,6 @@ const ProfileScreen = () => {
           value={profile.city}
           onChangeText={text => onChange('city', text)}
           placeholder="City"
-          editable={isEditing}
         />
 
         <WdInput
@@ -153,7 +160,6 @@ const ProfileScreen = () => {
           value={profile.district}
           onChangeText={text => onChange('district', text)}
           placeholder="District"
-          editable={isEditing}
         />
 
         <WdInput
@@ -161,7 +167,6 @@ const ProfileScreen = () => {
           value={profile.province}
           onChangeText={text => onChange('province', text)}
           placeholder="Province"
-          editable={isEditing}
         />
 
         <WdInput
@@ -169,69 +174,81 @@ const ProfileScreen = () => {
           value={profile.postalCode}
           onChangeText={text => onChange('postalCode', text)}
           placeholder="Postal Code"
-          editable={isEditing}
         />
-
-        {/* BUTTON */}
-        {isEditing ? (
-          <WdButton
-            title="SAVE"
-            onPress={handleSave}
-            loading={loading}
-            style={{ marginTop: 24, backgroundColor: theme.colors.appBg }}
-          />
-        ) : (
-          <WdButton
-            title="EDIT"
-            onPress={() => setIsEditing(true)}
-            style={{
-              marginTop: 24,
-              backgroundColor: 'transparent',
-              borderWidth: 1,
-              borderColor: theme.colors.appBg,
-            }}
-            textStyle={{ color: theme.colors.appBg }}
-          />
-        )}
       </ScrollView>
+
+      {/* FIXED FOOTER WITH SAVE BUTTON */}
+      <View
+        style={[styles.footer, { backgroundColor: theme.colors.background }]}
+      >
+        <WdButton
+          title="SAVE"
+          onPress={handleSave}
+          loading={loading}
+          style={{ backgroundColor: theme.colors.appBg }}
+        />
+      </View>
     </SafeAreaView>
   );
 };
 
-export default ProfileScreen;
+export default EditProfileScreen;
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  container: {
-    padding: 16,
-    paddingBottom: 40,
-    backgroundColor: '#fff',
-  },
   header: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  headerTop: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
   },
   backBtn: {
     padding: 8,
   },
+  subtitle: {
+    marginLeft: 16,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 40,
+  },
   avatarContainer: {
+    width: '100%',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 24,
+  },
+  avatarWrapper: {
+    position: 'relative',
+    width: 120,
+    height: 120,
   },
   avatar: {
     width: 120,
     height: 120,
     borderRadius: 60,
+    borderWidth: 1,
   },
   cameraBtn: {
     position: 'absolute',
     bottom: 0,
-    right: 110 / 2 - 10,
-    backgroundColor: '#000',
+    right: 0,
     padding: 8,
     borderRadius: 20,
+    borderWidth: 3,
+    borderColor: '#fff',
+  },
+  footer: {
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0',
   },
 });

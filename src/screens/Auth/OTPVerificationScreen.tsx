@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -15,17 +15,35 @@ import WdText from '../../components/common/WdText';
 import WdButton from '../../components/common/WdButton';
 import WdImage from '../../components/common/WdImage';
 import { useAuth } from '../../context/AuthContext';
+import BaseApi from '../../service/baseApi';
+import { showToast } from '../../utils/ToastService';
 
 const OTP_LENGTH = 6;
-const RESEND_TIMER = 60; // seconds
+const RESEND_TIMER = 60;
 
 const OTPVerificationScreen = ({ route, navigation }: any) => {
   const { theme } = useTheme();
   const { login } = useAuth();
   const styles = createStyles(theme);
-  const { phoneNumber } = route?.params || { phoneNumber: '' };
 
-  const [otp, setOtp] = useState<string[]>(new Array(OTP_LENGTH).fill(''));
+  const { phoneNumber, otpReceived } = route?.params || {
+    phoneNumber: '',
+    otpReceived: '',
+  };
+
+  // Convert otpReceived string (e.g. "123456") into string[] (e.g. ['1','2','3','4','5','6'])
+  const parseOtpString = (otpStr: string): string[] => {
+    const digits =
+      otpStr
+        ?.toString()
+        .replace(/[^0-9]/g, '')
+        .slice(0, OTP_LENGTH)
+        .split('') || [];
+    // Pad with empty strings if shorter than OTP_LENGTH
+    return [...digits, ...new Array(OTP_LENGTH - digits.length).fill('')];
+  };
+
+  const [otp, setOtp] = useState<string[]>(() => parseOtpString(otpReceived));
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendTimer, setResendTimer] = useState(RESEND_TIMER);
@@ -33,207 +51,223 @@ const OTPVerificationScreen = ({ route, navigation }: any) => {
 
   const inputRefs = useRef<Array<TextInput | null>>([]);
 
-  // Timer countdown effect
+  // Timer — runs once on mount only
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    const interval = setInterval(() => {
+      setResendTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setCanResend(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
-    if (resendTimer > 0) {
-      interval = setInterval(() => {
+  // Populate OTP from parent + auto-focus first empty field (or verify if complete)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      if (otpReceived) {
+        const parsed = parseOtpString(otpReceived);
+        setOtp(parsed);
+
+        const isComplete = parsed.every(d => d !== '');
+        if (isComplete) {
+          // Auto-verify if parent passed a full OTP
+          handleVerifyOTP(parsed.join(''));
+        } else {
+          // Focus first empty slot
+          const firstEmpty = parsed.findIndex(d => d === '');
+          inputRefs.current[firstEmpty !== -1 ? firstEmpty : 0]?.focus();
+        }
+      } else {
+        // No OTP from parent, just focus first input
+        inputRefs.current[0]?.focus();
+      }
+    }, 300);
+
+    return () => clearTimeout(timeout);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [otpReceived]);
+
+  const resetOtp = useCallback(() => {
+    setOtp(new Array(OTP_LENGTH).fill(''));
+    setTimeout(() => inputRefs.current[0]?.focus(), 100);
+  }, []);
+
+  const handleVerifyOTP = useCallback(
+    async (otpCode?: string) => {
+      const otpToVerify = otpCode ?? otp.join('');
+
+      if (otpToVerify.length !== OTP_LENGTH) {
+        setError('Please enter the complete OTP');
+        return;
+      }
+
+      try {
+        setLoading(true);
+        setError('');
+
+        const response = await BaseApi.post('/auth/verify-otp', {
+          otp: otpToVerify,
+          phone: phoneNumber,
+        });
+
+        if (response.success) {
+          showToast('success', 'OTP Verified', 'OTP verified successfully!');
+          await login('temp-token', {
+            id: 'temp-user',
+            name: 'User',
+            email: 'user@example.com',
+            phone: phoneNumber || '',
+            role: 'user',
+            verified: true,
+          });
+        } else {
+          setError('Invalid OTP. Please try again.');
+          resetOtp();
+        }
+      } catch (err: any) {
+        setError(err.message || 'Verification failed. Please try again.');
+        resetOtp();
+      } finally {
+        setLoading(false);
+      }
+    },
+    [otp, phoneNumber, login, resetOtp],
+  );
+
+  const handleOtpChange = useCallback(
+    (text: string, index: number) => {
+      const numericText = text.replace(/[^0-9]/g, '');
+
+      // Handle paste of multiple digits
+      if (numericText.length > 1) {
+        const otpArray = numericText.slice(0, OTP_LENGTH).split('');
+        const newOtp = new Array(OTP_LENGTH).fill('');
+        otpArray.forEach((digit, idx) => {
+          newOtp[idx] = digit;
+        });
+        setOtp(newOtp);
+        setError('');
+
+        const nextEmpty = newOtp.findIndex((d: string) => d === '');
+        if (nextEmpty !== -1) {
+          inputRefs.current[nextEmpty]?.focus();
+        } else {
+          inputRefs.current[OTP_LENGTH - 1]?.focus();
+          if (newOtp.every((d: string) => d !== '')) {
+            handleVerifyOTP(newOtp.join(''));
+          }
+        }
+        return;
+      }
+
+      const newOtp = [...otp];
+      newOtp[index] = numericText;
+      setOtp(newOtp);
+      setError('');
+
+      if (numericText && index < OTP_LENGTH - 1) {
+        inputRefs.current[index + 1]?.focus();
+      }
+
+      if (index === OTP_LENGTH - 1 && numericText) {
+        if (newOtp.every((d: string) => d !== '')) {
+          handleVerifyOTP(newOtp.join(''));
+        }
+      }
+    },
+    [otp, handleVerifyOTP],
+  );
+
+  const handleKeyPress = useCallback(
+    (e: any, index: number) => {
+      if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
+        const newOtp = [...otp];
+        newOtp[index - 1] = '';
+        setOtp(newOtp);
+        inputRefs.current[index - 1]?.focus();
+      }
+    },
+    [otp],
+  );
+
+  const handleResendOTP = useCallback(async () => {
+    if (!canResend || loading) return;
+
+    try {
+      setLoading(true);
+      setError('');
+
+      await BaseApi.post('/auth/send-otp', { phone: phoneNumber });
+
+      showToast(
+        'success',
+        'OTP Sent',
+        'A new OTP has been sent to your phone.',
+      );
+      setCanResend(false);
+      setResendTimer(RESEND_TIMER);
+      resetOtp();
+
+      // Restart countdown
+      const interval = setInterval(() => {
         setResendTimer(prev => {
           if (prev <= 1) {
+            clearInterval(interval);
             setCanResend(true);
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
-    }
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [resendTimer]);
-
-  // Auto-focus first input on mount
-  useEffect(() => {
-    setTimeout(() => {
-      inputRefs.current[0]?.focus();
-    }, 300);
-  }, []);
-
-  const handleOtpChange = (text: string, index: number) => {
-    // Only allow numbers
-    const numericText = text.replace(/[^0-9]/g, '');
-
-    // Handle paste - if pasting multiple digits
-    if (numericText.length > 1) {
-      handlePaste(numericText);
-      return;
-    }
-
-    const newOtp = [...otp];
-    newOtp[index] = numericText;
-    setOtp(newOtp);
-    setError('');
-
-    // Auto-focus next input
-    if (numericText && index < OTP_LENGTH - 1) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    // Auto-verify when all fields are filled
-    if (index === OTP_LENGTH - 1 && numericText) {
-      const isComplete = newOtp.every(digit => digit !== '');
-      if (isComplete) {
-        handleVerifyOTP(newOtp.join(''));
-      }
-    }
-  };
-
-  const handleKeyPress = (e: any, index: number) => {
-    // Handle backspace
-    if (e.nativeEvent.key === 'Backspace') {
-      if (!otp[index] && index > 0) {
-        // If current field is empty, focus previous field
-        inputRefs.current[index - 1]?.focus();
-        const newOtp = [...otp];
-        newOtp[index - 1] = '';
-        setOtp(newOtp);
-      }
-    }
-  };
-
-  const handlePaste = (pastedText: string) => {
-    const numericText = pastedText.replace(/[^0-9]/g, '');
-    const otpArray = numericText.slice(0, OTP_LENGTH).split('');
-
-    const newOtp = new Array(OTP_LENGTH).fill('');
-    otpArray.forEach((digit, idx) => {
-      newOtp[idx] = digit;
-    });
-
-    setOtp(newOtp);
-    setError('');
-
-    // Focus the next empty field or the last field
-    const nextEmptyIndex = newOtp.findIndex(digit => digit === '');
-    if (nextEmptyIndex !== -1) {
-      inputRefs.current[nextEmptyIndex]?.focus();
-    } else {
-      inputRefs.current[OTP_LENGTH - 1]?.focus();
-      // Auto-verify if all filled
-      if (newOtp.every(digit => digit !== '')) {
-        handleVerifyOTP(newOtp.join(''));
-      }
-    }
-  };
-
-  const handleVerifyOTP = async (otpCode?: string) => {
-    const otpToVerify = otpCode || otp.join('');
-
-    if (otpToVerify.length !== OTP_LENGTH) {
-      setError('Please enter complete OTP');
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError('');
-
-      console.log('Verifying OTP:', otpToVerify, 'for phone:', phoneNumber);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-
-      // Simulate success/failure
-      const isValid = true; // Replace with actual API response
-
-      if (isValid) {
-        // Navigate to home or next screen
-        console.log('OTP verified successfully!');
-        await login('temp-token', {
-          id: 'temp-user',
-          name: 'User',
-          email: 'user@example.com',
-          phone: phoneNumber || '',
-          role: 'user',
-          verified: true,
-        });
-      } else {
-        setError('Invalid OTP. Please try again.');
-        setOtp(new Array(OTP_LENGTH).fill(''));
-        inputRefs.current[0]?.focus();
-      }
     } catch (err: any) {
-      setError(err.message || 'Verification failed. Please try again.');
-      setOtp(new Array(OTP_LENGTH).fill(''));
-      inputRefs.current[0]?.focus();
+      setError(err.message || 'Failed to resend OTP. Please try again.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [canResend, loading, phoneNumber, resetOtp]);
 
-  const handleResendOTP = async () => {
-    if (!canResend) return;
-
-    try {
-      setLoading(true);
-      setError('');
-
-      console.log('Resending OTP to:', phoneNumber);
-
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Reset timer and state
-      setResendTimer(RESEND_TIMER);
-      setCanResend(false);
-      setOtp(new Array(OTP_LENGTH).fill(''));
-      inputRefs.current[0]?.focus();
-
-      // Show success message (you can use a toast notification)
-      console.log('OTP sent successfully!');
-    } catch (err: any) {
-      setError(err.message || 'Failed to resend OTP');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatPhoneNumber = (phone: string) => {
+  const formatPhoneNumber = (phone: string): string => {
     if (!phone) return '';
     const visibleDigits = 4;
-    const countryCodeEnd = phone.indexOf(' ') + 1;
+    const spaceIndex = phone.indexOf(' ');
+    const countryCodeEnd = spaceIndex !== -1 ? spaceIndex + 1 : 0;
     const visiblePart = phone.slice(-visibleDigits);
-    const maskedPart = '*'.repeat(
-      phone.length - countryCodeEnd - visibleDigits,
-    );
-    return (
-      phone.slice(0, countryCodeEnd) +
-      maskedPart.match(/.{1,3}/g)?.join(' ') +
-      ' ' +
-      visiblePart
-    );
+    const maskedLength = phone.length - countryCodeEnd - visibleDigits;
+    const maskedPart = '*'.repeat(Math.max(0, maskedLength));
+    const groupedMask = maskedPart.match(/.{1,3}/g)?.join(' ') ?? '';
+    return `${phone.slice(0, countryCodeEnd)}${groupedMask} ${visiblePart}`;
   };
 
-  const formatTime = (seconds: number) => {
+  const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const isOtpComplete = otp.every(d => d !== '');
+
   return (
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <StatusBar barStyle="dark-content" />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor={theme.colors.background}
+      />
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {/* Logo */}
           <View style={styles.logoContainer}>
@@ -251,7 +285,7 @@ const OTPVerificationScreen = ({ route, navigation }: any) => {
             style={styles.title}
           />
 
-          {/* Subtitle with phone number */}
+          {/* Subtitle */}
           <WdText
             label={`Enter the 6-digit code sent to\n${formatPhoneNumber(
               phoneNumber,
@@ -275,22 +309,23 @@ const OTPVerificationScreen = ({ route, navigation }: any) => {
                 onChangeText={text => handleOtpChange(text, index)}
                 onKeyPress={e => handleKeyPress(e, index)}
                 keyboardType="number-pad"
-                maxLength={1}
+                maxLength={2}
                 selectTextOnFocus
                 textContentType="oneTimeCode"
                 autoComplete="sms-otp"
+                editable={!loading}
               />
             ))}
           </View>
 
           {/* Error Message */}
-          {error ? (
+          {!!error && (
             <WdText
               label={error}
               color={theme.colors.error}
               style={styles.errorText}
             />
-          ) : null}
+          )}
 
           {/* Resend OTP */}
           <View style={styles.resendContainer}>
@@ -322,17 +357,24 @@ const OTPVerificationScreen = ({ route, navigation }: any) => {
           <WdButton
             title={loading ? 'Verifying...' : 'Verify OTP'}
             onPress={() => handleVerifyOTP()}
-            disabled={loading || otp.some(digit => digit === '')}
+            disabled={loading || !isOtpComplete}
             style={styles.verifyButton}
           />
 
-          {loading && <ActivityIndicator style={{ marginTop: 12 }} />}
+          {loading && (
+            <ActivityIndicator
+              style={styles.loader}
+              color={theme.colors.appBg}
+              size="small"
+            />
+          )}
 
           {/* Back to Login */}
           <TouchableOpacity
             onPress={() => navigation.goBack()}
             style={styles.backButton}
             activeOpacity={0.7}
+            disabled={loading}
           >
             <WdText
               label="← Change phone number"
@@ -349,6 +391,9 @@ const OTPVerificationScreen = ({ route, navigation }: any) => {
 
 const createStyles = (theme: any) =>
   StyleSheet.create({
+    flex: {
+      flex: 1,
+    },
     container: {
       flex: 1,
       paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
@@ -357,6 +402,7 @@ const createStyles = (theme: any) =>
       flexGrow: 1,
       paddingHorizontal: 20,
       paddingTop: 60,
+      paddingBottom: 40,
       justifyContent: 'flex-start',
     },
     logoContainer: {
@@ -381,6 +427,7 @@ const createStyles = (theme: any) =>
     otpContainer: {
       flexDirection: 'row',
       justifyContent: 'space-between',
+      marginTop: 24,
       marginBottom: 16,
       paddingHorizontal: 10,
     },
@@ -405,7 +452,7 @@ const createStyles = (theme: any) =>
     },
     errorText: {
       textAlign: 'center',
-      marginTop: 8,
+      marginTop: 4,
       marginBottom: 8,
     },
     resendContainer: {
@@ -425,6 +472,9 @@ const createStyles = (theme: any) =>
     verifyButton: {
       backgroundColor: theme.colors.appBg,
       marginTop: 8,
+    },
+    loader: {
+      marginTop: 12,
     },
     backButton: {
       marginTop: 24,

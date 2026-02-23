@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import {
   View,
   StyleSheet,
@@ -18,18 +18,19 @@ const WelcomeScreen = () => {
   const navigation = useNavigation<any>();
   const styles = createStyles(theme);
 
-  const handleLogin = () => {
+  const handleLogin = useCallback(() => {
     navigation.replace('Login');
-    console.log('Iniciar sesión pressed');
-  };
+  }, [navigation]);
 
-  const handleCreateAccount = () => {
-    console.log('Crear cuenta pressed');
-  };
+  const handleCreateAccount = useCallback(() => {
+    // TODO: implement guest/account creation flow
+    navigation.navigate('Register');
+  }, [navigation]);
 
-  const handleSocialLogin = (platform: string) => {
+  const handleSocialLogin = useCallback((platform: string) => {
+    // TODO: implement social login per platform
     console.log(`${platform} login pressed`);
-  };
+  }, []);
 
   return (
     <SafeAreaView
@@ -52,12 +53,7 @@ const WelcomeScreen = () => {
         </View>
 
         {/* Title */}
-        <WdText
-          label="YO RECICLO"
-          fontSize={28}
-          isBold={true}
-          style={styles.title}
-        />
+        <WdText label="YO RECICLO" fontSize={28} isBold style={styles.title} />
 
         {/* Subtitle */}
         <WdText
@@ -67,14 +63,14 @@ const WelcomeScreen = () => {
           style={styles.subtitle}
         />
 
-        {/* Login Button */}
+        {/* Get Started Button */}
         <WdButton
           title="Get Started"
           onPress={handleLogin}
           style={styles.loginButton}
         />
 
-        {/* Create Account Button */}
+        {/* Continue as Guest Button */}
         <WdButton
           title="Continue as Guest"
           onPress={handleCreateAccount}
@@ -92,7 +88,7 @@ const WelcomeScreen = () => {
           />
           <WdText
             label="Redes Sociales"
-            fontSize={18}
+            fontSize={14}
             style={styles.socialText}
           />
           <View
@@ -102,35 +98,31 @@ const WelcomeScreen = () => {
 
         {/* Social Icons */}
         <View style={styles.socialIcons}>
-          <TouchableOpacity
-            onPress={() => handleSocialLogin('Google')}
-            style={styles.socialButton}
-          >
-            <WdImage
-              source={require('../../assets/icons/google.png')}
-              imageStyle={styles.socialIcon}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => handleSocialLogin('Facebook')}
-            style={styles.socialButton}
-          >
-            <WdImage
-              source={require('../../assets/icons/facebook.png')}
-              imageStyle={styles.socialIcon}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            onPress={() => handleSocialLogin('Apple')}
-            style={styles.socialButton}
-          >
-            <WdImage
-              source={require('../../assets/icons/apple.png')}
-              imageStyle={styles.socialIcon}
-            />
-          </TouchableOpacity>
+          {(
+            [
+              {
+                platform: 'Google',
+                icon: require('../../assets/icons/google.png'),
+              },
+              {
+                platform: 'Facebook',
+                icon: require('../../assets/icons/facebook.png'),
+              },
+              {
+                platform: 'Apple',
+                icon: require('../../assets/icons/apple.png'),
+              },
+            ] as const
+          ).map(({ platform, icon }) => (
+            <TouchableOpacity
+              key={platform}
+              onPress={() => handleSocialLogin(platform)}
+              style={styles.socialButton}
+              activeOpacity={0.7}
+            >
+              <WdImage source={icon} imageStyle={styles.socialIcon} />
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -154,6 +146,7 @@ const createStyles = (theme: any) =>
     recycleIcon: {
       width: 150,
       height: 150,
+      resizeMode: 'contain',
     },
     title: {
       textAlign: 'center',
@@ -162,6 +155,7 @@ const createStyles = (theme: any) =>
     subtitle: {
       textAlign: 'center',
       margin: 30,
+      lineHeight: 26,
     },
     loginButton: {
       backgroundColor: theme.colors.appBg,
@@ -174,6 +168,7 @@ const createStyles = (theme: any) =>
     },
     createAccountText: {
       color: theme.colors.appBg,
+      fontWeight: '600',
     },
     socialContainer: {
       flexDirection: 'row',
@@ -188,6 +183,7 @@ const createStyles = (theme: any) =>
     },
     socialText: {
       marginHorizontal: 15,
+      color: theme.colors.text,
     },
     socialIcons: {
       flexDirection: 'row',
@@ -196,7 +192,7 @@ const createStyles = (theme: any) =>
       gap: 30,
     },
     socialButton: {
-      padding: 5,
+      padding: 8,
     },
     socialIcon: {
       width: 40,

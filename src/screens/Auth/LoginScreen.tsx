@@ -12,12 +12,16 @@ import {
   Modal,
   FlatList,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { useTheme } from '../../context/ThemeContext';
 import WdText from '../../components/common/WdText';
+import { storage, STORE } from '../../utils/Storage';
 import WdButton from '../../components/common/WdButton';
 import WdImage from '../../components/common/WdImage';
 import { useNavigation } from '@react-navigation/native';
+import BaseApi from '../../service/baseApi';
+import { showToast } from '../../utils/ToastService';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -67,6 +71,7 @@ const COUNTRY_CODES = [
 ];
 
 const LoginScreen = () => {
+  // const { structuredClone } = require('node:util');
   const navigation = useNavigation();
   const { theme } = useTheme();
   const styles = createStyles(theme);
@@ -99,8 +104,8 @@ const LoginScreen = () => {
           setSelectedCountry(detectedCountry);
         }
       }
-    } catch (error) {
-      console.log('Could not detect country from IP:', error);
+    } catch (err: any) {
+      console.log('Could not detect country from IP:', err);
     } finally {
       setDetectingCountry(false);
     }
@@ -126,11 +131,36 @@ const LoginScreen = () => {
 
     try {
       setLoading(true);
-      const fullPhoneNumber = `${selectedCountry.code}${phoneNumber}`;
+      const fullPhoneNumber = `${phoneNumber}`;
+      const code = selectedCountry.code.split('+')[1];
       console.log('Requesting OTP for:', fullPhoneNumber);
-      navigation.navigate('OTPVerification', { phoneNumber: fullPhoneNumber });
+      const response = await BaseApi.post('/auth/auth-user', {
+        phone: phoneNumber,
+        phoneCode: code,
+        firstName: 'Pravin',
+        lastName: 'Salame',
+        email: 'pravinsalame10@gmail.com',
+      });
+      console.log('response - ', response);
+      if (response.success) {
+        showToast(
+          'success',
+          'OTP Sent',
+          'OTP sent successfully! ' + ' otp = ' + response.data.user.otp,
+        );
+        // const copy = structuredClone(response.data);
+        const copy = JSON.stringify(response.data);
+        storage.set(STORE.USER_INFO, copy);
+
+        navigation.navigate('OTPVerification', {
+          phoneNumber: fullPhoneNumber,
+          otpReceived: response.data.user.otp,
+        });
+      }
     } catch (err: any) {
       setError(err.message || 'Error al enviar OTP');
+      const message = err?.response?.data?.message || 'Something went wrong!';
+      Alert.alert('Error', message);
     } finally {
       setLoading(false);
     }

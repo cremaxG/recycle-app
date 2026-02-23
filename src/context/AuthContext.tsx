@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { storage } from '../utils/Storage';
+import { storage, STORE } from '../utils/Storage';
 import { User } from '../types/user';
+import BaseApi from '../service/baseApi';
 
 interface AuthContextProps {
   isAuthenticated: boolean;
@@ -22,6 +23,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const { AUTH_TOKEN, USER_INFO } = STORE;
+
   useEffect(() => {
     const checkAuth = async () => {
       const token = storage.getString('authToken');
@@ -33,15 +36,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   }, []);
 
   const login = async (token: string, user: User) => {
-    storage.set('authToken', token);
+    storage.set(AUTH_TOKEN, token);
     // store user as a JSON string to satisfy storage value types
-    storage.set('userDetails', JSON.stringify(user));
+    storage.set(USER_INFO, JSON.stringify(user));
     setIsAuthenticated(true);
   };
 
   const logout = async () => {
-    storage.remove('authToken');
-    storage.remove('userDetails');
+    const response = await BaseApi.post('/auth/logout', {});
+    console.log('Logout Response -> ', response);
+    if (response.success) {
+    }
+    storage.remove(AUTH_TOKEN);
+    storage.remove(USER_INFO);
+    storage.clearAll();
     setIsAuthenticated(false);
   };
 
